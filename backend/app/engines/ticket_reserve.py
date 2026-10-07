@@ -1,4 +1,10 @@
-"""Open lend tickets reserve capacity in the top strip only."""
+"""Open lend tickets are informational holds only — they never reduce availability.
+
+A preview writes only a row in lend_tickets. The available column and the top
+strip's available count both come from items/loans and move only when a
+confirm actually lands a loan. Open tickets surface solely as a `reserved`
+count and a `preview_hold` marker on the row.
+"""
 
 def open_ticket_count(c) -> int:
     row = c.execute(
@@ -11,14 +17,6 @@ def reserved_item_ids(c) -> set:
         "SELECT item_id FROM lend_tickets WHERE status=?",
         (_open_status(),)).fetchall()
     return _distinct_items(rows)
-
-def adjust_available_count(list_len: int, reserved: int) -> dict:
-    reserved = _clamp(reserved, 0, list_len)
-    return {
-        "list_len": list_len,
-        "reserved": reserved,
-        "count_available": max(0, list_len - reserved),
-    }
 
 def mark_preview_rows(available: list, reserved_ids: set) -> list:
     out = []
@@ -40,12 +38,9 @@ def _safe_int(row, key: str = "c") -> int:
     except (TypeError, ValueError, KeyError):
         return 0
 
-def _clamp(n: int, lo: int, hi: int) -> int:
-    return max(lo, min(hi, n))
-
 def _distinct_items(rows) -> set:
     out = set()
     for r in rows:
-        if r.get("item_id") is not None:
+        if r["item_id"] is not None:
             out.add(int(r["item_id"]))
     return out

@@ -15,6 +15,9 @@ def init_db():
       status TEXT, created_at TEXT, resolved_at TEXT
     );
     CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT);
+    -- 至多一笔 active：DB 级兜底，叠单/并发也不可能叠出第二笔
+    CREATE UNIQUE INDEX IF NOT EXISTS loans_one_active_per_item
+      ON loans(item_id) WHERE status='active';
     """)
     if c.execute("SELECT COUNT(*) c FROM items").fetchone()["c"] == 0:
         c.executemany("INSERT INTO items(title,owner,status,data_quality) VALUES (?,?,?,?)", [
@@ -29,4 +32,18 @@ def init_db():
         )
         c.execute("INSERT INTO settings(key,value) VALUES ('board_name','木色邻里板')")
         c.commit()
+    reconcile_item_status(c)
     c.close()
+
+def reconcile_item_status(c):
+    """items.status 与 loans 对齐：一种 status，清掉历史遗留的半截状态。
+
+    有 active 借出的物品必须是 on_loan；没有 active 借出的必须是 available。
+    """
+    c.execute("""UPDATE items SET status='on_loan'
+                 WHERE status='available'
+                   AND id IN (SELECT item_id FROM loans WHERE status='active')""")
+    c.execute("""UPDATE items SET status='available'
+                 WHERE status='on_loan'
+                   AND id NOT IN (SELECT item_id FROM loans WHERE status='active')""")
+    c.commit()

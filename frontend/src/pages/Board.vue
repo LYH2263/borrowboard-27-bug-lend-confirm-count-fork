@@ -66,8 +66,17 @@ async function confirm(id) {
     await reload()
   }
 }
-function cancel(id) {
-  delete tickets[id]
+async function cancel(id) {
+  error.value = ''; busy.value = true
+  try {
+    await api('/tickets/' + tickets[id].ticket_id + '/cancel', { method: 'POST', body: '{}' })
+  } catch (e) {
+    error.value = '取消失败：' + e.message
+  } finally {
+    delete tickets[id]
+    busy.value = false
+    await reload()
+  }
 }
 async function ret(id) {
   await api('/loans/' + id + '/return', { method: 'POST', body: '{}' })
