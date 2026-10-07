@@ -2,7 +2,6 @@
   <div>
     <div class="status-bar">
       <span>可借 {{ counts.available || 0 }}</span>
-      <span v-if="counts.reserved">占用 {{ counts.reserved }}</span>
       <span>在借 {{ counts.active || 0 }}</span>
       <span>逾期 {{ counts.overdue || 0 }}</span>
     </div>

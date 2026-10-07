@@ -5,7 +5,6 @@
       <div v-if="error" class="err">{{ error }}</div>
       <div v-for="i in board.available" :key="i.id" class="item">
         <strong>{{ i.title }}</strong>
-        <span v-if="i.preview_hold" class="chip chip-hold">预演占用</span>
         <div class="muted">物主 {{ i.owner || '—' }}</div>
         <input v-model="forms[i.id].borrower" placeholder="借用人" />
         <input v-model="forms[i.id].due_date" placeholder="应还日 YYYY-MM-DD" />
